@@ -29,23 +29,25 @@ class BertDataset(Dataset):
         inputs = self.tokenizer.encode_plus(
             text1 ,
             None,
+            pad_to_max_length=True,
             add_special_tokens=True,
-            max_length=self.max_length
+            return_attention_mask=True,
+            max_length=self.max_length,
         )
         ids = inputs["input_ids"]
         token_type_ids = inputs["token_type_ids"]
         mask = inputs["attention_mask"]
-        
+
         padding_length = self.max_length - len(ids)
-        
+        print(padding_length)
         ids = ids + ([0] * padding_length)
         mask = mask + ([0] * padding_length)
-        
+
         return {
             'ids': torch.tensor(ids, dtype=torch.long),
             'mask': torch.tensor(mask, dtype=torch.long),
             'token_type_ids': torch.tensor(token_type_ids, dtype=torch.long),
-            'target': torch.tensor(self.train_csv.loc[index,'target'],dtype=torch.float)
+            'target': torch.tensor(self.train_csv.loc[index, 'target'], dtype=torch.long)
             }
 
 class BERT(nn.Module):
@@ -63,7 +65,8 @@ class BERT(nn.Module):
         
         return out
 
-loss_fn = nn.CrossEntropyLoss()
+
+loss_fn = nn.BCEWithLogitsLoss()
 
 
 
@@ -79,11 +82,12 @@ def finetune(epochs,dataloader,model,loss_fn,optimizer):
             token_type_ids=dl['token_type_ids']
             mask= dl['mask']
             label=dl['target']
-    
+            label = label.unsqueeze(1)
             output=model(
                 ids=ids,
                 mask=mask,
                 token_type_ids=token_type_ids)
+            label = label.type_as(output)
 
             loss=loss_fn(output,label)
             optimizer.zero_grad()
@@ -99,7 +103,7 @@ def finetune(epochs,dataloader,model,loss_fn,optimizer):
 
 
 tokenizer = transformers.BertTokenizer.from_pretrained("bert-base-uncased")
-dataset= BertDataset('.','train.csv',tokenizer,
+dataset= BertDataset(r'C:\Users\bansa\Documents\ML\nlp-getting-started','train.csv',tokenizer,
                      max_length=100)
 
 dataloader=DataLoader(dataset=dataset)
