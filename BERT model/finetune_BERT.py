@@ -99,7 +99,7 @@ def finetune(epochs,dataloader,model,loss_fn,optimizer):
 
 
 tokenizer = transformers.BertTokenizer.from_pretrained("bert-base-uncased")
-dataset= BertDataset(r'C:\Users\bansa\Documents\ML\nlp-getting-started','train.csv',tokenizer,
+dataset= BertDataset('.','train.csv',tokenizer,
                      max_length=100)
 
 dataloader=DataLoader(dataset=dataset)
